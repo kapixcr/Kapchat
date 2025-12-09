@@ -50,7 +50,12 @@ Sirve los archivos compilados para web localmente para probar la versión de pro
 - Esto evita problemas de CORS durante el desarrollo
 - El header de autenticación se agrega automáticamente por el proxy
 
-**En producción:**
+**En producción (Vercel):**
+- Se usa una función serverless (`api/kapix/[...path].ts`) que actúa como proxy
+- Esta función maneja CORS automáticamente y agrega el header de autenticación
+- Las peticiones van a `/api/kapix/*` que se redirigen a la función serverless
+
+**En producción (otros servidores):**
 - Las peticiones van directamente a `https://kpixs.com/api/*`
 - Si hay problemas de CORS, necesitarás:
   1. Configurar CORS en el servidor de Kapix para permitir tu dominio

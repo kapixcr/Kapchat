@@ -46,19 +46,31 @@ const makeWebRequest = async (endpoint: string, method: string = 'GET', body?: a
   // Asegurar que el endpoint empiece con /
   const endpointPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   
-  // En desarrollo, usar el proxy de Vite para evitar CORS
+  // Determinar qué proxy usar
   const isDev = import.meta.env.DEV;
-  const useProxy = isDev;
+  const isVercel = typeof window !== 'undefined' && (
+    window.location.hostname.includes('vercel.app') ||
+    window.location.hostname.includes('vercel.com')
+  );
   
   let url: string;
-  if (useProxy) {
-    // Usar el proxy de Vite en desarrollo
+  let useProxy = false;
+  
+  if (isDev) {
+    // En desarrollo, usar el proxy de Vite
     url = `/api/kapix${endpointPath}`;
-    console.log(`[KapixAPI] 🌐 Web Request (via proxy): ${method} ${url}`);
+    useProxy = true;
+    console.log(`[KapixAPI] 🌐 Web Request (via Vite proxy): ${method} ${url}`);
+  } else if (isVercel) {
+    // En producción en Vercel, usar la función serverless
+    // El endpointPath ya incluye el / inicial, solo necesitamos agregarlo al path
+    url = `/api/kapix${endpointPath}`;
+    useProxy = true;
+    console.log(`[KapixAPI] 🌐 Web Request (via Vercel function): ${method} ${url}`);
   } else {
-    // En producción, usar la URL directa
+    // En producción en otros servidores, usar la URL directa
     url = `${API_BASE_URL}${endpointPath}`;
-    console.log(`[KapixAPI] 🌐 Web Request: ${method} ${url}`);
+    console.log(`[KapixAPI] 🌐 Web Request (direct): ${method} ${url}`);
   }
   
   const options: RequestInit = {
@@ -68,15 +80,15 @@ const makeWebRequest = async (endpoint: string, method: string = 'GET', body?: a
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      // Siempre incluir el authtoken en los headers
-      // El proxy también lo agregará, pero es mejor tenerlo aquí también por si acaso
-      'authtoken': AUTH_TOKEN,
+      // En producción con proxy, el authtoken se agrega en el servidor
+      // En desarrollo o sin proxy, lo agregamos aquí
+      ...(useProxy ? {} : { 'authtoken': AUTH_TOKEN }),
     },
   };
 
   // Log para debugging
   if (useProxy) {
-    console.log('[KapixAPI] 🔄 Usando proxy de Vite, el header authtoken también está en la petición');
+    console.log(`[KapixAPI] 🔄 Usando proxy (${isDev ? 'Vite' : 'Vercel'}), el header authtoken será agregado por el proxy`);
   } else {
     console.log('[KapixAPI] 🔄 Usando URL directa, header authtoken incluido en la petición');
   }
