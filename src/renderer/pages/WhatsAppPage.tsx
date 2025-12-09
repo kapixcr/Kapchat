@@ -60,6 +60,13 @@ export function WhatsAppPage() {
     updateStatus,
   } = useWhatsAppStore();
 
+  // Verificar si estamos en Electron
+  const isElectron = (
+    typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron')
+  ) || (
+    typeof window !== 'undefined' && !!(window as any).api
+  );
+
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -189,7 +196,18 @@ export function WhatsAppPage() {
             <MessageCircle size={48} className="text-kap-whatsapp" />
           </div>
 
-          {isConnecting && qrCode ? (
+          {!isElectron ? (
+            <>
+              <h2 className="text-2xl font-display font-bold text-white mb-4">
+                WhatsApp no disponible en Web
+              </h2>
+              <p className="text-zinc-400 mb-6">
+                La funcionalidad de WhatsApp solo está disponible en la aplicación de escritorio de Electron.
+                <br /><br />
+                Por favor, descarga e instala la aplicación de escritorio para usar esta funcionalidad.
+              </p>
+            </>
+          ) : isConnecting && qrCode ? (
             <>
               <h2 className="text-2xl font-display font-bold text-white mb-4">
                 Escanea el código QR
