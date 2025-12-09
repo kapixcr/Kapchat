@@ -1,0 +1,80 @@
+# Compilación para Web
+
+Este proyecto puede compilarse tanto para Electron (aplicación de escritorio) como para Web (navegador).
+
+## Scripts Disponibles
+
+### Desarrollo Web
+```bash
+npm run dev:web
+```
+Inicia el servidor de desarrollo de Vite en modo web (puerto 5173).
+
+### Compilación para Web
+```bash
+npm run build:web
+```
+Compila la aplicación para producción web. Los archivos se generan en `dist/web/`.
+
+### Vista Previa de Producción Web
+```bash
+npm run preview:web
+```
+Sirve los archivos compilados para web localmente para probar la versión de producción.
+
+## Diferencias entre Electron y Web
+
+### Funcionalidades Disponibles
+
+**Solo en Electron:**
+- WhatsApp (requiere Node.js para la conexión)
+- Email (requiere Node.js para IMAP/SMTP)
+- Acceso completo a la API de Kapix sin problemas de CORS
+
+**Disponible en ambos:**
+- Chat (Supabase)
+- Tareas (con limitaciones de CORS en web)
+- Flows
+- Agentes
+- Configuración
+
+### Routing
+
+- **Electron**: Usa `HashRouter` para compatibilidad con `file://` protocol
+- **Web**: Usa `BrowserRouter` para URLs limpias
+
+### API de Kapix
+
+**En desarrollo:**
+- Se usa un proxy de Vite configurado automáticamente que redirige `/api/kapix/*` a `https://kpixs.com/api/*`
+- Esto evita problemas de CORS durante el desarrollo
+- El header de autenticación se agrega automáticamente por el proxy
+
+**En producción:**
+- Las peticiones van directamente a `https://kpixs.com/api/*`
+- Si hay problemas de CORS, necesitarás:
+  1. Configurar CORS en el servidor de Kapix para permitir tu dominio
+  2. O usar un proxy en tu servidor web (nginx, Apache, etc.)
+
+## Despliegue Web
+
+Después de compilar con `npm run build:web`, los archivos en `dist/web/` pueden ser servidos por cualquier servidor web estático:
+
+- **Netlify**: Arrastra la carpeta `dist/web/` a Netlify
+- **Vercel**: Configura el directorio de salida como `dist/web`
+- **GitHub Pages**: Configura el directorio de salida como `dist/web`
+- **Servidor propio**: Copia `dist/web/` a tu servidor web (nginx, Apache, etc.)
+
+## Variables de Entorno
+
+Asegúrate de configurar las variables de entorno necesarias en tu servidor web o en el archivo `.env`:
+
+- `VITE_SUPABASE_URL`: URL de tu proyecto Supabase
+- `VITE_SUPABASE_ANON_KEY`: Clave anónima de Supabase
+
+## Notas Importantes
+
+- Las funcionalidades que requieren Node.js (WhatsApp, Email) no estarán disponibles en la versión web
+- La API de Kapix puede requerir configuración de CORS adicional
+- Algunas características pueden tener comportamiento diferente entre Electron y Web
+

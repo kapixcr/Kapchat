@@ -1,0 +1,329 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Colores por defecto (dark mode) */
+  --color-accent: #7c3aed;
+  --color-accent-rgb: 124, 58, 237;
+  --color-accent-hover: #8b5cf6;
+  
+  --color-bg-dark: #0f0f12;
+  --color-bg-darker: #0a0a0d;
+  --color-surface: #18181d;
+  --color-surface-light: #1f1f26;
+  --color-border: #0f0f12;
+  
+  --color-text-primary: #e4e4e7;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #71717a;
+  
+  /* Colores fijos */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-whatsapp: #25d366;
+  --color-email: #ea4335;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--color-accent-rgb), 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--color-accent-rgb), 0.5);
+}
+
+/* Selection */
+::selection {
+  background: rgba(var(--color-accent-rgb), 0.4);
+}
+
+/* Title bar drag region */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Gradient backgrounds */
+.gradient-mesh {
+  background: 
+    radial-gradient(at 40% 20%, rgba(var(--color-accent-rgb), 0.15) 0px, transparent 50%),
+    radial-gradient(at 80% 80%, rgba(37, 211, 102, 0.08) 0px, transparent 50%),
+    radial-gradient(at 10% 90%, rgba(234, 67, 53, 0.08) 0px, transparent 50%);
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(var(--color-surface), 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(var(--color-border), 0.5);
+}
+
+/* Input styles */
+input, textarea {
+  font-family: 'DM Sans', sans-serif;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+}
+
+/* Animations */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Message bubble styles */
+.message-bubble {
+  position: relative;
+}
+
+.message-bubble::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.message-bubble-left::before {
+  left: -8px;
+  top: 10px;
+  border-right: 8px solid var(--color-surface-light);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+.message-bubble-right::before {
+  right: -8px;
+  top: 10px;
+  border-left: 8px solid var(--color-accent);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+/* Channel item hover effect */
+.channel-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.channel-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-accent);
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+
+.channel-item:hover::before,
+.channel-item.active::before {
+  transform: scaleY(1);
+}
+
+/* Theme-aware utility classes */
+.bg-theme-dark {
+  background-color: var(--color-bg-dark);
+}
+
+.bg-theme-darker {
+  background-color: var(--color-bg-darker);
+}
+
+.bg-theme-surface {
+  background-color: var(--color-surface);
+}
+
+.bg-theme-surface-light {
+  background-color: var(--color-surface-light);
+}
+
+.border-theme {
+  border-color: var(--color-border);
+}
+
+.text-theme-primary {
+  color: var(--color-text-primary);
+}
+
+.text-theme-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-theme-muted {
+  color: var(--color-text-muted);
+}
+
+.bg-accent {
+  background-color: var(--color-accent);
+}
+
+.bg-accent-hover:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.text-accent {
+  color: var(--color-accent);
+}
+
+.border-accent {
+  border-color: var(--color-accent);
+}
+
+.ring-accent {
+  --tw-ring-color: var(--color-accent);
+}
+
+/* Focus styles with accent color */
+.focus-accent:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb), 0.2);
+}
+
+/* Light mode specific overrides */
+.light-mode .glass {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .gradient-mesh {
+  background: 
+    radial-gradient(at 40% 20%, rgba(var(--color-accent-rgb), 0.1) 0px, transparent 50%),
+    radial-gradient(at 80% 80%, rgba(37, 211, 102, 0.05) 0px, transparent 50%),
+    radial-gradient(at 10% 90%, rgba(234, 67, 53, 0.05) 0px, transparent 50%);
+}
+
+/* Tailwind overrides with CSS variables */
+@layer utilities {
+  .bg-kap-dark {
+    background-color: var(--color-bg-dark);
+  }
+  
+  .bg-kap-darker {
+    background-color: var(--color-bg-darker);
+  }
+  
+  .bg-kap-surface {
+    background-color: var(--color-surface);
+  }
+  
+  .bg-kap-surface-light {
+    background-color: var(--color-surface-light);
+  }
+  
+  .border-kap-border {
+    border-color: var(--color-border);
+  }
+  
+  .bg-kap-accent {
+    background-color: var(--color-accent);
+  }
+  
+  .bg-kap-accent-hover:hover {
+    background-color: var(--color-accent-hover);
+  }
+  
+  .text-kap-accent {
+    color: var(--color-accent);
+  }
+  
+  .border-kap-accent {
+    border-color: var(--color-accent);
+  }
+  
+  .ring-kap-accent {
+    --tw-ring-color: var(--color-accent);
+  }
+  
+  .shadow-kap-accent {
+    --tw-shadow-color: rgba(var(--color-accent-rgb), 0.25);
+    --tw-shadow: var(--tw-shadow-colored);
+  }
+  
+  .focus\:border-kap-accent:focus {
+    border-color: var(--color-accent);
+  }
+  
+  .focus\:ring-kap-accent:focus {
+    --tw-ring-color: var(--color-accent);
+  }
+}
