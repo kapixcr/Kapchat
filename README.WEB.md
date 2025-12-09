@@ -60,10 +60,26 @@ Sirve los archivos compilados para web localmente para probar la versión de pro
 
 Después de compilar con `npm run build:web`, los archivos en `dist/web/` pueden ser servidos por cualquier servidor web estático:
 
-- **Netlify**: Arrastra la carpeta `dist/web/` a Netlify
-- **Vercel**: Configura el directorio de salida como `dist/web`
-- **GitHub Pages**: Configura el directorio de salida como `dist/web`
-- **Servidor propio**: Copia `dist/web/` a tu servidor web (nginx, Apache, etc.)
+### Vercel
+
+El proyecto incluye un archivo `vercel.json` configurado. Para desplegar:
+
+1. Conecta tu repositorio a Vercel
+2. Vercel detectará automáticamente la configuración
+3. Asegúrate de configurar las variables de entorno en Vercel:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+
+**Nota**: El archivo `vercel.json` está configurado para:
+- Build command: `npm run build:web`
+- Output directory: `dist/web`
+- Rewrites: Todas las rutas se redirigen a `index.html` para SPA routing
+
+### Otros servicios
+
+- **Netlify**: Arrastra la carpeta `dist/web/` a Netlify o crea un `netlify.toml` similar
+- **GitHub Pages**: Configura el directorio de salida como `dist/web` y agrega un `_redirects` file
+- **Servidor propio**: Copia `dist/web/` a tu servidor web (nginx, Apache, etc.) y configura rewrite rules
 
 ## Variables de Entorno
 
