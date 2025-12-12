@@ -73,12 +73,150 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
       typeof window !== 'undefined' && !!(window as any).api
     );
 
-    if (!isElectron) {
-      set({ 
-        isConnecting: false,
-        error: 'WhatsApp solo está disponible en la aplicación de escritorio de Electron.'
-      });
-      return;
+    // Si estamos en web, intentar usar el servidor dedicado o API serverless
+    if (!isElectron || !window.api?.whatsapp) {
+      try {
+        const { whatsappApiService } = await import('../services/whatsappApi');
+        const { whatsappWebSocketService } = await import('../services/whatsappWebSocket');
+        const { user } = useAuthStore.getState();
+        
+        console.log('[WhatsAppStore] Connecting via dedicated server/API...');
+        
+        // Intentar conectar al servidor dedicado primero
+        const serverUrl = 
+          (typeof window !== 'undefined' && (window as any).NEXT_PUBLIC_WHATSAPP_SERVER_URL) ||
+          (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_WHATSAPP_SERVER_URL);
+        
+        if (serverUrl) {
+          // Usar servidor dedicado con WebSocket
+          console.log('[WhatsAppStore] Using dedicated server:', serverUrl);
+          
+          // Conectar WebSocket
+          const socket = whatsappWebSocketService.connect(user?.id);
+          
+          // Escuchar QR
+          whatsappWebSocketService.onQR((qr) => {
+            console.log('[WhatsAppStore] QR received via WebSocket');
+            set({ qrCode: qr, isConnecting: true });
+          }, user?.id);
+          
+          // Escuchar cuando esté listo
+          whatsappWebSocketService.onReady((wsUser) => {
+            console.log('[WhatsAppStore] Ready via WebSocket', wsUser);
+            set({
+              isConnected: true,
+              isConnecting: false,
+              qrCode: null,
+              connectionState: 'connected',
+              user: wsUser || null,
+            });
+            get().fetchConversations();
+          }, user?.id);
+          
+          // Escuchar cambios de estado
+          whatsappWebSocketService.onStateChange((state) => {
+            set({ connectionState: state as any });
+          }, user?.id);
+          
+          // Escuchar mensajes
+          whatsappWebSocketService.onMessage((message) => {
+            // Manejar mensajes recibidos
+            console.log('[WhatsAppStore] Message received via WebSocket', message);
+          }, user?.id);
+          
+          // Conectar al servidor
+          const result = await whatsappApiService.connect(user?.id);
+          
+          if (result.connected) {
+            set({ 
+              isConnected: true, 
+              isConnecting: false,
+              connectionState: 'connected',
+              qrCode: null 
+            });
+            await get().fetchConversations();
+          } else {
+            // Si no está conectado, esperar QR o hacer polling
+            set({ isConnecting: true });
+            
+            // Polling para obtener QR si no viene inmediatamente
+            const pollInterval = setInterval(async () => {
+              try {
+                const qrResult = await whatsappApiService.getQR();
+                if (qrResult.qrCode && !get().qrCode) {
+                  set({ qrCode: qrResult.qrCode });
+                  clearInterval(pollInterval);
+                } else if (qrResult.status === 'connected') {
+                  set({ 
+                    isConnected: true, 
+                    isConnecting: false,
+                    connectionState: 'connected',
+                    qrCode: null 
+                  });
+                  clearInterval(pollInterval);
+                  await get().fetchConversations();
+                }
+              } catch (err) {
+                console.error('[WhatsAppStore] Error polling QR:', err);
+              }
+            }, 2000);
+            
+            setTimeout(() => clearInterval(pollInterval), 60000);
+          }
+        } else {
+          // Fallback a API routes de Next.js (serverless)
+          console.log('[WhatsAppStore] Using Next.js API routes (serverless)');
+          const result = await whatsappApiService.connect(user?.id);
+          
+          if (result.qrCode) {
+            set({ qrCode: result.qrCode, isConnecting: true });
+          } else if (result.state === 'waiting' || !result.qrCode) {
+            set({ isConnecting: true });
+            const pollInterval = setInterval(async () => {
+              try {
+                const qrResult = await whatsappApiService.getQR();
+                if (qrResult.qrCode) {
+                  set({ qrCode: qrResult.qrCode });
+                  clearInterval(pollInterval);
+                } else if (qrResult.status === 'connected') {
+                  set({ 
+                    isConnected: true, 
+                    isConnecting: false,
+                    connectionState: 'connected',
+                    qrCode: null 
+                  });
+                  clearInterval(pollInterval);
+                  await get().fetchConversations();
+                }
+              } catch (err) {
+                console.error('[WhatsAppStore] Error polling QR:', err);
+              }
+            }, 2000);
+            setTimeout(() => clearInterval(pollInterval), 60000);
+          } else if (result.connected) {
+            set({ 
+              isConnected: true, 
+              isConnecting: false,
+              connectionState: 'connected',
+              qrCode: null 
+            });
+            await get().fetchConversations();
+          } else {
+            set({ 
+              isConnecting: false,
+              error: result.message || 'Error al conectar WhatsApp'
+            });
+          }
+        }
+        return;
+      } catch (err: any) {
+        console.error('[WhatsAppStore] Error connecting:', err);
+        set({ 
+          isConnecting: false,
+          error: err.message || 'Error al conectar WhatsApp. Asegúrate de que el servidor dedicado esté ejecutándose.'
+        });
+        return;
+      }
     }
 
     // Esperar a que window.api esté disponible
@@ -345,22 +483,32 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
       typeof window !== 'undefined' && !!(window as any).api
     );
 
-    if (!isElectron || !window.api?.whatsapp) {
-      // En web, WhatsApp no está disponible, simplemente retornar sin error
-      return;
-    }
-
-    try {
-      const sessionStatus = await window.api.whatsapp.checkSession();
-      
-      if (sessionStatus.hasSession && sessionStatus.isConnected) {
-        console.log('[WhatsAppStore] Found active session, auto-connecting...');
-        // Conectar automáticamente si hay una sesión activa
-        await get().connect();
+    if (isElectron && window.api?.whatsapp) {
+      // En Electron, usar la API local
+      try {
+        const sessionStatus = await window.api.whatsapp.checkSession();
+        
+        if (sessionStatus.hasSession && sessionStatus.isConnected) {
+          console.log('[WhatsAppStore] Found active session, auto-connecting...');
+          await get().connect();
+        }
+      } catch (err: any) {
+        console.error('[WhatsAppStore] Error checking session:', err);
       }
-    } catch (err: any) {
-      console.error('[WhatsAppStore] Error checking session:', err);
-      // No mostrar error al usuario, solo loguear
+    } else {
+      // En web, intentar usar la API serverless
+      try {
+        const { whatsappApiService } = await import('../services/whatsappApi');
+        const sessionStatus = await whatsappApiService.getStatus();
+        
+        if (sessionStatus.hasSession && sessionStatus.isConnected) {
+          console.log('[WhatsAppStore] Found active session in web, auto-connecting...');
+          await get().connect();
+        }
+      } catch (err: any) {
+        console.error('[WhatsAppStore] Error checking session in web:', err);
+        // Silenciosamente fallar en web
+      }
     }
   },
 
@@ -499,9 +647,32 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
       typeof window !== 'undefined' && !!(window as any).api
     );
 
+    // Si estamos en web, intentar usar el servidor dedicado
     if (!isElectron || !window.api?.whatsapp) {
-      set({ error: 'WhatsApp solo está disponible en la aplicación de escritorio de Electron.' });
-      return;
+      try {
+        const { whatsappWebSocketService } = await import('../services/whatsappWebSocket');
+        const phoneNumber = currentConversation.phone || currentConversation.id;
+        
+        await whatsappWebSocketService.sendMessage(user?.id || 'default', phoneNumber, content);
+        
+        // Guardar mensaje en Supabase
+        await supabase.from('whatsapp_messages').insert({
+          conversation_id: currentConversation.id,
+          from: user?.id || 'unknown',
+          to: phoneNumber,
+          content: content,
+          type: 'text',
+          status: 'sent',
+        });
+        
+        // Refrescar mensajes
+        await get().fetchMessages(currentConversation.id);
+        return;
+      } catch (err: any) {
+        console.error('[WhatsAppStore] Error sending message via WebSocket:', err);
+        set({ error: err.message || 'Error al enviar mensaje. Asegúrate de que el servidor dedicado esté ejecutándose.' });
+        return;
+      }
     }
 
     try {

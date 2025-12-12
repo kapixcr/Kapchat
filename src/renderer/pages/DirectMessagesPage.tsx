@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   MessageSquare,
   Send,
@@ -22,8 +23,9 @@ import { es } from 'date-fns/locale';
 import type { User as UserType } from '../types';
 
 export function DirectMessagesPage() {
-  const { conversationId } = useParams();
-  const navigate = useNavigate();
+  const params = useParams();
+  const conversationId = params?.conversationId as string | undefined;
+  const router = useRouter();
   const { user } = useAuthStore();
   const { agents, fetchAgents } = useAgentStore();
   const {
@@ -79,7 +81,7 @@ export function DirectMessagesPage() {
       const convId = await getOrCreateConversation(otherUser.id);
       setShowNewChatModal(false);
       setUserSearchQuery('');
-      navigate(`/messages/${convId}`);
+      router.push(`/direct-messages/${convId}`);
     } catch (err) {
       console.error('Error starting chat:', err);
     }
@@ -166,7 +168,7 @@ export function DirectMessagesPage() {
             filteredConversations.map((conversation) => (
               <button
                 key={conversation.id}
-                onClick={() => navigate(`/messages/${conversation.id}`)}
+                onClick={() => router.push(`/direct-messages/${conversation.id}`)}
                 className={`
                   w-full flex items-center gap-3 p-4 border-b border-kap-border/20 transition-colors
                   ${

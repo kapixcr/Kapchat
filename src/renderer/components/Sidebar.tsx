@@ -1,4 +1,5 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   MessageSquare,
@@ -33,8 +34,8 @@ const navItems = [
 export function Sidebar() {
   const { user, logout } = useAuthStore();
   const { timer, pauseTimer, resumeTimer, stopTimer, updateTimerElapsed } = useTasksStore();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const router = useRouter();
   const [currentElapsed, setCurrentElapsed] = useState(0);
 
   // Actualizar el cronómetro cada segundo
@@ -61,7 +62,7 @@ export function Sidebar() {
 
   const handleGoToTask = () => {
     if (timer.taskId) {
-      navigate(`/tasks`);
+      router.push(`/tasks`);
       // El modal se abrirá desde TasksPage cuando detecte que hay un timer activo
     }
   };
@@ -155,11 +156,11 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
         {navItems.map(({ icon: Icon, label, path, color }) => {
-          const isActive = location.pathname.startsWith(path);
+          const isActive = pathname?.startsWith(path) || false;
           return (
-            <NavLink
+            <Link
               key={path}
-              to={path}
+              href={path}
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
                 ${isActive
@@ -172,7 +173,7 @@ export function Sidebar() {
               {isActive && (
                 <div className="hidden lg:block ml-auto w-1.5 h-1.5 rounded-full bg-kap-accent" />
               )}
-            </NavLink>
+            </Link>
           );
         })}
       </nav>

@@ -39,6 +39,9 @@ export const useThemeStore = create<ThemeState>()(
       },
 
       applyTheme: () => {
+        // Solo aplicar en el cliente
+        if (typeof window === 'undefined') return;
+        
         const { mode, accentColor } = get();
         const root = document.documentElement;
         const colorInfo = accentColors[accentColor];

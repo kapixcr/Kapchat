@@ -9,21 +9,19 @@ let whatsappService: any = null;
 let emailService: any = null;
 
 // Detectar si estamos en desarrollo o producción
-// Producción: app está empaquetada O existe dist/renderer/index.html (archivos compilados)
-// Desarrollo: app no está empaquetada Y NO existe dist/renderer/index.html (necesita Vite)
-const rendererPath = path.join(__dirname, '../renderer/index.html');
-const hasCompiledRenderer = fs.existsSync(rendererPath);
-const isDev = !app.isPackaged && !hasCompiledRenderer;
+// Con Next.js, en desarrollo cargamos desde localhost:3000
+// En producción, cargamos desde .next/out o .next/standalone
+const isDev = !app.isPackaged;
 
-// Función para esperar a que el servidor de Vite esté listo
-function waitForViteServer(maxAttempts = 30, delay = 500): Promise<void> {
+// Función para esperar a que el servidor de Next.js esté listo
+function waitForNextServer(maxAttempts = 30, delay = 500): Promise<void> {
   return new Promise((resolve, reject) => {
     let attempts = 0;
     
     const checkServer = () => {
       attempts++;
       
-      const req = http.get('http://localhost:5173', (res) => {
+      const req = http.get('http://localhost:3000', (res) => {
         // Servidor está respondiendo
         resolve();
       });
@@ -31,7 +29,7 @@ function waitForViteServer(maxAttempts = 30, delay = 500): Promise<void> {
       req.on('error', () => {
         // Servidor aún no está listo
         if (attempts >= maxAttempts) {
-          reject(new Error(`Servidor de Vite no disponible después de ${maxAttempts} intentos`));
+          reject(new Error(`Servidor de Next.js no disponible después de ${maxAttempts} intentos`));
         } else {
           setTimeout(checkServer, delay);
         }
@@ -40,7 +38,7 @@ function waitForViteServer(maxAttempts = 30, delay = 500): Promise<void> {
       req.setTimeout(1000, () => {
         req.destroy();
         if (attempts >= maxAttempts) {
-          reject(new Error(`Timeout esperando servidor de Vite después de ${maxAttempts} intentos`));
+          reject(new Error(`Timeout esperando servidor de Next.js después de ${maxAttempts} intentos`));
         } else {
           setTimeout(checkServer, delay);
         }
@@ -66,37 +64,38 @@ function createWindow() {
   });
 
   if (isDev) {
-    console.log('🔧 Modo desarrollo: esperando servidor de Vite...');
-    waitForViteServer()
+    console.log('🔧 Modo desarrollo: esperando servidor de Next.js...');
+    waitForNextServer()
       .then(() => {
-        console.log('✅ Servidor de Vite listo, cargando aplicación...');
+        console.log('✅ Servidor de Next.js listo, cargando aplicación...');
         if (mainWindow) {
-          mainWindow.loadURL('http://localhost:5173');
+          mainWindow.loadURL('http://localhost:3000');
           mainWindow.webContents.openDevTools();
         }
       })
       .catch((err) => {
-        console.error('❌ Error esperando servidor de Vite:', err.message);
-        console.log('💡 Asegúrate de ejecutar "npm run dev:renderer" en otra terminal');
+        console.error('❌ Error esperando servidor de Next.js:', err.message);
+        console.log('💡 Asegúrate de ejecutar "npm run dev" en otra terminal');
         // Intentar cargar de todas formas después de un delay
         setTimeout(() => {
           if (mainWindow) {
             console.log('🔄 Intentando cargar de nuevo...');
-            mainWindow.loadURL('http://localhost:5173');
+            mainWindow.loadURL('http://localhost:3000');
             mainWindow.webContents.openDevTools();
           }
         }, 2000);
       });
   } else {
-    // En producción, cargar desde archivos compilados
-    console.log('📦 Modo producción: cargando archivo local');
+    // En producción, cargar desde Next.js build
+    console.log('📦 Modo producción: cargando desde Next.js build');
     
-    // Intentar diferentes rutas según cómo esté empaquetada la app
+    // Next.js con output: 'standalone' genera en .next/standalone
+    // O con output: 'export' genera en .next/out
     const possiblePaths = [
-      path.join(__dirname, '../renderer/index.html'), // Empaquetado: dist/main -> dist/renderer
-      path.join(app.getAppPath(), 'dist', 'renderer', 'index.html'), // Empaquetado: desde app.asar
-      path.join(app.getAppPath(), 'renderer', 'index.html'), // Empaquetado: desde app.asar (sin dist)
-      path.join(__dirname, '../../dist/renderer/index.html'), // Desarrollo compilado
+      path.join(__dirname, '../../.next/standalone/index.html'),
+      path.join(__dirname, '../../.next/out/index.html'),
+      path.join(app.getAppPath(), '.next', 'standalone', 'index.html'),
+      path.join(app.getAppPath(), '.next', 'out', 'index.html'),
     ];
 
     let loaded = false;
@@ -112,8 +111,9 @@ function createWindow() {
     }
 
     if (!loaded) {
-      console.error('❌ No se encontró index.html en ninguna ruta esperada');
+      console.error('❌ No se encontró index.html de Next.js en ninguna ruta esperada');
       console.error('Rutas intentadas:', possiblePaths);
+      console.error('💡 Asegúrate de ejecutar "npm run build" antes de empaquetar');
     }
   }
 

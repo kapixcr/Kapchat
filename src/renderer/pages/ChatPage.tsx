@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Hash,
   Lock,
@@ -32,8 +33,9 @@ import DOMPurify from 'dompurify';
 import type { User } from '../types';
 
 export function ChatPage() {
-  const { channelId } = useParams();
-  const navigate = useNavigate();
+  const params = useParams();
+  const channelId = params?.channelId as string | undefined;
+  const router = useRouter();
   const { user, supabase } = useAuthStore();
   const {
     channels,
@@ -230,7 +232,7 @@ export function ChatPage() {
       await deleteChannel(currentChannel.id);
       setShowDeleteConfirm(false);
       setShowEditModal(false);
-      navigate('/chat');
+      router.push('/chat');
     } catch (err) {
       console.error('Error deleting channel:', err);
     }
@@ -316,7 +318,7 @@ export function ChatPage() {
             {publicChannels.map((channel) => (
               <button
                 key={channel.id}
-                onClick={() => navigate(`/chat/${channel.id}`)}
+                onClick={() => router.push(`/chat/${channel.id}`)}
                 className={`
                   channel-item w-full flex items-center gap-2 px-3 py-2 rounded-lg mb-0.5 transition-colors
                   ${currentChannel?.id === channel.id
@@ -346,7 +348,7 @@ export function ChatPage() {
               {privateChannels.map((channel) => (
                 <button
                   key={channel.id}
-                  onClick={() => navigate(`/chat/${channel.id}`)}
+                  onClick={() => router.push(`/chat/${channel.id}`)}
                   className={`
                     channel-item w-full flex items-center gap-2 px-3 py-2 rounded-lg mb-0.5 transition-colors
                     ${currentChannel?.id === channel.id

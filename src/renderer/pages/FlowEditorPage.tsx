@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
     ArrowLeft,
     Save,
@@ -322,8 +323,9 @@ function NodeEditorModal({ node, isOpen, onClose, onSave, allNodes }: NodeEditor
 }
 
 export function FlowEditorPage() {
-    const { flowId } = useParams<{ flowId: string }>();
-    const navigate = useNavigate();
+    const params = useParams();
+    const flowId = params?.id as string | undefined;
+    const router = useRouter();
     const {
         currentFlow,
         isLoading,
@@ -571,7 +573,7 @@ export function FlowEditorPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate('/flows')}
+                        onClick={() => router.push('/flows')}
                         icon={<ArrowLeft size={16} />}
                     />
                     <div className="h-6 w-px bg-kap-border" />

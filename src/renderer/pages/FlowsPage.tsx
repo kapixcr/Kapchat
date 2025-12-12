@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import {
     Workflow,
     Plus,
@@ -30,7 +30,7 @@ import { es } from 'date-fns/locale';
 import type { WhatsAppFlow } from '../types';
 
 export function FlowsPage() {
-    const navigate = useNavigate();
+    const router = useRouter();
     const {
         flows,
         templates,
@@ -79,7 +79,7 @@ export function FlowsPage() {
             setNewFlowName('');
             setNewFlowKeyword('');
             setSelectedTemplate(null);
-            navigate(`/flows/${newFlow.id}`);
+            router.push(`/flows/${newFlow.id}`);
         }
     };
 
@@ -93,7 +93,7 @@ export function FlowsPage() {
     const handleDuplicateFlow = async (flow: WhatsAppFlow) => {
         const newFlow = await duplicateFlow(flow.id);
         if (newFlow) {
-            navigate(`/flows/${newFlow.id}`);
+            router.push(`/flows/${newFlow.id}`);
         }
     };
 
@@ -276,7 +276,7 @@ export function FlowsPage() {
                                     </span>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
-                                            onClick={() => navigate(`/flows/${flow.id}`)}
+                                            onClick={() => router.push(`/flows/${flow.id}`)}
                                             className="p-1.5 rounded hover:bg-kap-surface-light text-zinc-400 hover:text-white transition-colors"
                                             title="Editar"
                                         >

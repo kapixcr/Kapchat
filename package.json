@@ -4,22 +4,24 @@
   "description": "Sistema de comunicación unificada - Chat, WhatsApp y Email",
   "main": "dist/main/index.js",
   "scripts": {
-    "dev": "concurrently -n \"renderer,main\" -c \"cyan,magenta\" \"npm run dev:renderer\" \"npm run dev:main\"",
-    "dev:main": "npm run build:main && electron .",
-    "dev:renderer": "vite",
-    "dev:web": "vite --config vite.web.config.ts",
-    "build": "npm run build:main && npm run build:renderer",
+    "dev": "next dev --webpack",
+    "dev:whatsapp-server": "cd whatsapp-server && npm run dev",
+    "dev:all": "concurrently -n \"next,whatsapp\" -c \"cyan,magenta\" \"npm run dev\" \"npm run dev:whatsapp-server\"",
+    "dev:electron": "concurrently -n \"next,electron\" -c \"cyan,magenta\" \"npm run dev\" \"npm run dev:electron:main\"",
+    "dev:electron:main": "npm run build:main && wait-on http://localhost:3000 && electron .",
+    "build": "next build",
+    "build:export": "NEXT_OUTPUT=export next build",
     "build:main": "tsc -p tsconfig.main.json",
-    "build:renderer": "vite build",
-    "build:web": "vite build --config vite.web.config.ts",
-    "preview:web": "vite preview --config vite.web.config.ts",
-    "start": "npm run build && electron .",
-    "start:prod": "electron .",
-    "prod": "npm run build && electron .",
-    "package": "npm run build && electron-builder",
-    "package:mac": "npm run build && electron-builder --mac",
-    "package:win": "npm run build && electron-builder --win",
-    "package:linux": "npm run build && electron-builder --linux"
+    "build:whatsapp-server": "cd whatsapp-server && npm run build",
+    "build:electron": "npm run build:export && npm run build:main",
+    "start": "next start",
+    "start:whatsapp-server": "cd whatsapp-server && npm start",
+    "start:electron": "npm run build:electron && electron .",
+    "package": "npm run build:electron && electron-builder",
+    "package:mac": "npm run build:electron && electron-builder --mac",
+    "package:win": "npm run build:electron && electron-builder --win",
+    "package:linux": "npm run build:electron && electron-builder --linux",
+    "lint": "next lint"
   },
   "keywords": [
     "slack",
@@ -31,9 +33,9 @@
   "author": "Kapix",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/react": "^18.2.42",
-    "@types/react-dom": "^18.2.17",
+    "@types/node": "^25.0.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "@vercel/node": "^3.0.7",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
@@ -43,7 +45,8 @@
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.3.2",
-    "vite": "^5.0.6"
+    "vite": "^5.0.6",
+    "wait-on": "^9.0.3"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
@@ -60,12 +63,14 @@
     "imap": "^0.8.19",
     "lucide-react": "^0.294.0",
     "mailparser": "^3.6.5",
+    "next": "^16.0.9",
     "nodemailer": "^6.9.7",
     "pino": "^8.17.1",
     "qrcode": "^1.5.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^19.2.2",
+    "react-dom": "^19.2.2",
     "react-router-dom": "^6.21.0",
+    "socket.io-client": "^4.7.2",
     "zustand": "^4.4.7"
   },
   "build": {
@@ -106,7 +111,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "category": "public.app-category.productivity"

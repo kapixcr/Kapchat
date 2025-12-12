@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Mail,
   Send,
@@ -27,8 +28,9 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export function EmailPage() {
-  const { emailId } = useParams();
-  const navigate = useNavigate();
+  const params = useParams();
+  const emailId = params?.emailId as string | undefined;
+  const router = useRouter();
   const { config } = useAuthStore();
   const { agents, fetchAgents } = useAgentStore();
   const {
@@ -217,7 +219,7 @@ export function EmailPage() {
               </p>
               <Button
                 variant="ghost"
-                onClick={() => navigate('/settings')}
+                onClick={() => router.push('/settings')}
                 icon={<Settings size={16} />}
               >
                 Ir a Ajustes
@@ -271,7 +273,7 @@ export function EmailPage() {
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => navigate('/settings')}
+                  onClick={() => router.push('/settings')}
                   icon={<Settings size={16} />}
                 >
                   Ir a Ajustes
@@ -389,7 +391,7 @@ export function EmailPage() {
           {filteredEmails.map((email) => (
             <button
               key={email.id}
-              onClick={() => navigate(`/email/${email.id}`)}
+              onClick={() => router.push(`/email/${email.id}`)}
               className={`
                 w-full flex items-start gap-3 p-4 border-b border-kap-border/20 transition-colors text-left
                 ${currentEmail?.id === email.id

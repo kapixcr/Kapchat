@@ -26,10 +26,19 @@ Sirve los archivos compilados para web localmente para probar la versión de pro
 
 ### Funcionalidades Disponibles
 
-**Solo en Electron:**
-- WhatsApp (requiere Node.js para la conexión)
+**Solo en Electron (funcionalidad completa):**
+- WhatsApp (requiere Node.js y acceso al sistema de archivos para mantener sesión persistente)
 - Email (requiere Node.js para IMAP/SMTP)
 - Acceso completo a la API de Kapix sin problemas de CORS
+
+**WhatsApp en Web (Beta - Limitado):**
+- Se ha implementado una versión experimental usando funciones serverless de Vercel
+- **Limitaciones importantes:**
+  - Las funciones serverless tienen límites de tiempo de ejecución (10-60 segundos)
+  - No pueden mantener conexiones persistentes por mucho tiempo
+  - Requiere Puppeteer/Chrome que puede ser pesado en serverless
+  - La experiencia puede ser inestable comparada con la aplicación de escritorio
+- **Recomendación:** Para uso en producción, se recomienda usar la aplicación de escritorio de Electron
 
 **Disponible en ambos:**
 - Chat (Supabase)

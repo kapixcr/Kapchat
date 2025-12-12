@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { LogIn, UserPlus, Mail, Lock, User, Sparkles } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { useAuthStore } from '../store/authStore';
 
 export function LoginPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { login, register } = useAuthStore();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +36,7 @@ export function LoginPage() {
       } else {
         await register(form.email, form.password, form.name);
       }
-      navigate('/');
+      router.push('/');
     } catch (err: any) {
       // Mensajes de error más específicos
       if (err.message?.includes('429') || err.message?.includes('Too Many Requests')) {

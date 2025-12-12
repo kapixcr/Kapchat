@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { Database, ArrowRight, Sparkles, CheckCircle } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { useAuthStore } from '../store/authStore';
 
 export function SetupPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { setConfig, checkConfig, isConfigured } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,7 +35,7 @@ export function SetupPage() {
 
   useEffect(() => {
     if (isConfigured) {
-      navigate('/login');
+      router.push('/login');
     }
   }, [isConfigured, navigate]);
 
@@ -49,7 +49,7 @@ export function SetupPage() {
         supabase_url: form.supabase_url,
         supabase_anon_key: form.supabase_anon_key,
       });
-      navigate('/login');
+      router.push('/login');
     } catch (err: any) {
       setError(err.message || 'Error al configurar');
     } finally {

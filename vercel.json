@@ -1,16 +1,20 @@
 {
-  "buildCommand": "npm run build:web",
-  "outputDirectory": "dist/web",
-  "rewrites": [
-    {
-      "source": "/api/kapix/:path*",
-      "destination": "/api/kapix/:path*"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+        "rewrites": [
+          {
+            "source": "/api/kapix/:path*",
+            "destination": "/api/kapix/:path*"
+          },
+          {
+            "source": "/api/whatsapp/:path*",
+            "destination": "/api/whatsapp/:path*"
+          },
+          {
+            "source": "/((?!api/).*)",
+            "destination": "/index.html"
+          }
+        ],
   "headers": [
     {
       "source": "/(.*)",

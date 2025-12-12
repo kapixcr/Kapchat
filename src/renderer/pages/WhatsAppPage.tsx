@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   MessageCircle,
   QrCode,
@@ -36,8 +37,9 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export function WhatsAppPage() {
-  const { conversationId } = useParams();
-  const navigate = useNavigate();
+  const params = useParams();
+  const conversationId = params?.conversationId as string | undefined;
+  const router = useRouter();
   const { user } = useAuthStore();
   const { agents, fetchAgents } = useAgentStore();
   const { departments, fetchDepartments } = useDepartmentsStore();
@@ -45,6 +47,7 @@ export function WhatsAppPage() {
     isConnected,
     isConnecting,
     qrCode,
+    error,
     conversations,
     currentConversation,
     messages,
@@ -199,13 +202,40 @@ export function WhatsAppPage() {
           {!isElectron ? (
             <>
               <h2 className="text-2xl font-display font-bold text-white mb-4">
-                WhatsApp no disponible en Web
+                WhatsApp en Web
               </h2>
-              <p className="text-zinc-400 mb-6">
-                La funcionalidad de WhatsApp solo está disponible en la aplicación de escritorio de Electron.
-                <br /><br />
-                Por favor, descarga e instala la aplicación de escritorio para usar esta funcionalidad.
+              <p className="text-zinc-400 mb-4">
+                Conecta tu WhatsApp usando el servidor dedicado para una experiencia completa.
               </p>
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4">
+                  <p className="text-sm text-red-400">{error}</p>
+                </div>
+              )}
+              {!isConnecting && !isConnected && (
+                <button
+                  onClick={() => connect()}
+                  className="px-6 py-3 bg-kap-whatsapp hover:bg-kap-whatsapp/90 text-white rounded-xl font-medium transition-colors"
+                >
+                  Conectar con QR
+                </button>
+              )}
+              {isConnecting && !qrCode && (
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="w-8 h-8 animate-spin text-kap-whatsapp" />
+                  <p className="text-zinc-400">Generando código QR...</p>
+                </div>
+              )}
+              {isConnecting && qrCode && (
+                <>
+                  <p className="text-zinc-400 mb-4">
+                    Escanea el código QR con tu teléfono
+                  </p>
+                  <div className="inline-block p-4 bg-white rounded-2xl mb-4">
+                    <img src={qrCode} alt="QR Code" className="w-64 h-64" />
+                  </div>
+                </>
+              )}
             </>
           ) : isConnecting && qrCode ? (
             <>
@@ -312,7 +342,7 @@ export function WhatsAppPage() {
           {filteredConversations.map((conversation) => (
             <button
               key={conversation.id}
-              onClick={() => navigate(`/whatsapp/${conversation.id}`)}
+              onClick={() => router.push(`/whatsapp/${conversation.id}`)}
               className={`
                 w-full flex items-start gap-3 p-4 border-b border-kap-border/20 transition-colors relative
                 ${currentConversation?.id === conversation.id

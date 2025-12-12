@@ -26,8 +26,18 @@ let supabaseInstance: SupabaseClient | null = null;
 
 // Obtener configuración desde variables de entorno
 const getEnvConfig = (): AppConfig | null => {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  // Next.js usa process.env, Vite usa import.meta.env
+  const url = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_URL
+    ? process.env.NEXT_PUBLIC_SUPABASE_URL
+    : typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL
+    ? import.meta.env.VITE_SUPABASE_URL
+    : undefined;
+    
+  const key = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    : typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY
+    ? import.meta.env.VITE_SUPABASE_ANON_KEY
+    : undefined;
 
   console.log('🔍 Checking .env config:', {
     hasUrl: !!url,
@@ -35,17 +45,48 @@ const getEnvConfig = (): AppConfig | null => {
     urlLength: url?.length || 0,
     keyLength: key?.length || 0,
     isElectron: typeof window !== 'undefined' && window.process?.type === 'renderer',
+    envType: typeof process !== 'undefined' ? 'process.env' : 'import.meta.env',
   });
 
   if (url && key) {
+    const emailUser = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_EMAIL_USER
+      ? process.env.NEXT_PUBLIC_EMAIL_USER
+      : typeof import.meta !== 'undefined' && import.meta.env?.VITE_EMAIL_USER
+      ? import.meta.env.VITE_EMAIL_USER
+      : '';
+      
+    const smtpHost = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SMTP_HOST
+      ? process.env.NEXT_PUBLIC_SMTP_HOST
+      : typeof import.meta !== 'undefined' && import.meta.env?.VITE_SMTP_HOST
+      ? import.meta.env.VITE_SMTP_HOST
+      : 'smtp.gmail.com';
+      
+    const smtpPort = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SMTP_PORT
+      ? parseInt(process.env.NEXT_PUBLIC_SMTP_PORT)
+      : typeof import.meta !== 'undefined' && import.meta.env?.VITE_SMTP_PORT
+      ? parseInt(import.meta.env.VITE_SMTP_PORT)
+      : 587;
+      
+    const imapHost = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_IMAP_HOST
+      ? process.env.NEXT_PUBLIC_IMAP_HOST
+      : typeof import.meta !== 'undefined' && import.meta.env?.VITE_IMAP_HOST
+      ? import.meta.env.VITE_IMAP_HOST
+      : 'imap.gmail.com';
+      
+    const imapPort = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_IMAP_PORT
+      ? parseInt(process.env.NEXT_PUBLIC_IMAP_PORT)
+      : typeof import.meta !== 'undefined' && import.meta.env?.VITE_IMAP_PORT
+      ? parseInt(import.meta.env.VITE_IMAP_PORT)
+      : 993;
+
     return {
       supabase_url: url,
       supabase_anon_key: key,
-      email_user: import.meta.env.VITE_EMAIL_USER || '',
-      smtp_host: import.meta.env.VITE_SMTP_HOST || 'smtp.gmail.com',
-      smtp_port: parseInt(import.meta.env.VITE_SMTP_PORT || '587'),
-      imap_host: import.meta.env.VITE_IMAP_HOST || 'imap.gmail.com',
-      imap_port: parseInt(import.meta.env.VITE_IMAP_PORT || '993'),
+      email_user: emailUser,
+      smtp_host: smtpHost,
+      smtp_port: smtpPort,
+      imap_host: imapHost,
+      imap_port: imapPort,
     };
   }
   console.warn('⚠️ .env config not found or incomplete');
