@@ -67,8 +67,8 @@ export function WhatsAppPage() {
   const isElectron = (
     typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron')
   ) || (
-    typeof window !== 'undefined' && !!(window as any).api
-  );
+      typeof window !== 'undefined' && !!(window as any).api
+    );
 
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +83,18 @@ export function WhatsAppPage() {
   useEffect(() => {
     checkSessionAndAutoConnect();
   }, [checkSessionAndAutoConnect]);
+
+  // Debug: Log cuando cambia el QR
+  useEffect(() => {
+    if (qrCode) {
+      console.log('[WhatsAppPage] QR Code available:', {
+        hasQR: !!qrCode,
+        length: qrCode.length,
+        format: qrCode.substring(0, 50),
+        isConnecting
+      });
+    }
+  }, [qrCode, isConnecting]);
 
   useEffect(() => {
     if (isConnected) {
@@ -105,7 +117,7 @@ export function WhatsAppPage() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    
+
     await sendMessage(newMessage.trim());
     setNewMessage('');
   };
@@ -146,14 +158,14 @@ export function WhatsAppPage() {
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = reader.result as string;
-        
+
         await sendMediaMessage({
           mediaUrl: base64,
           mediaType,
           fileName: file.name,
           caption: mediaType === 'image' || mediaType === 'video' ? newMessage.trim() || undefined : undefined,
         });
-        
+
         setNewMessage('');
         setShowMediaMenu(false);
       };
@@ -162,7 +174,7 @@ export function WhatsAppPage() {
       console.error('Error sending file:', error);
       alert(`Error al enviar archivo: ${error.message}`);
     }
-    
+
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -170,7 +182,7 @@ export function WhatsAppPage() {
   };
 
   const filteredConversations = conversations.filter(c => {
-    const matchesSearch = 
+    const matchesSearch =
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.phone.includes(searchQuery);
     const matchesFilter = filter === 'all' || c.status === filter;
@@ -202,39 +214,59 @@ export function WhatsAppPage() {
           {!isElectron ? (
             <>
               <h2 className="text-2xl font-display font-bold text-white mb-4">
-                WhatsApp en Web
+                WhatsApp Web
               </h2>
-              <p className="text-zinc-400 mb-4">
-                Conecta tu WhatsApp usando el servidor dedicado para una experiencia completa.
+              <p className="text-zinc-400 mb-4 text-sm max-w-sm mx-auto">
+                Para usar WhatsApp en la versión web, asegúrate de que el servidor dedicado de WPPConnect esté ejecutándose (`npm run dev:whatsapp-server`).
               </p>
+
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4">
-                  <p className="text-sm text-red-400">{error}</p>
-                </div>
-              )}
-              {!isConnecting && !isConnected && (
-                <button
-                  onClick={() => connect()}
-                  className="px-6 py-3 bg-kap-whatsapp hover:bg-kap-whatsapp/90 text-white rounded-xl font-medium transition-colors"
-                >
-                  Conectar con QR
-                </button>
-              )}
-              {isConnecting && !qrCode && (
-                <div className="flex flex-col items-center gap-4">
-                  <Loader2 className="w-8 h-8 animate-spin text-kap-whatsapp" />
-                  <p className="text-zinc-400">Generando código QR...</p>
-                </div>
-              )}
-              {isConnecting && qrCode && (
-                <>
-                  <p className="text-zinc-400 mb-4">
-                    Escanea el código QR con tu teléfono
-                  </p>
-                  <div className="inline-block p-4 bg-white rounded-2xl mb-4">
-                    <img src={qrCode} alt="QR Code" className="w-64 h-64" />
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 text-left">
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 text-red-400">⚠️</div>
+                    <div>
+                      <h4 className="font-semibold text-red-400 text-sm">Error de conexión</h4>
+                      <p className="text-xs text-red-300 mt-1">{error}</p>
+                    </div>
                   </div>
-                </>
+                </div>
+              )}
+
+              {!isConnecting && !isConnected && (
+                <div className="flex flex-col gap-3">
+                  <Button
+                    onClick={() => connect()}
+                    className="bg-kap-whatsapp hover:bg-kap-whatsapp/90 text-white font-medium"
+                    icon={<QrCode size={18} />}
+                  >
+                    Generar Código QR
+                  </Button>
+                  <p className="text-xs text-zinc-500">
+                    Esto conectará con el servidor local en puerto 3001
+                  </p>
+                </div>
+              )}
+
+              {isConnecting && !qrCode && (
+                <div className="flex flex-col items-center gap-4 bg-kap-surface-light p-6 rounded-2xl border border-kap-border">
+                  <Loader2 className="w-8 h-8 animate-spin text-kap-whatsapp" />
+                  <div>
+                    <p className="font-medium text-white mb-1">Iniciando sesión...</p>
+                    <p className="text-xs text-zinc-400">Conectando con el servidor y generando QR</p>
+                  </div>
+                </div>
+              )}
+
+              {isConnecting && qrCode && (
+                <div className="bg-white p-6 rounded-3xl shadow-xl">
+                  <div className="mb-4 text-center">
+                    <h3 className="text-zinc-900 font-bold mb-1">Escanea el código</h3>
+                    <p className="text-zinc-500 text-xs">Usa WhatsApp en tu celular</p>
+                  </div>
+                  <div className="bg-white rounded-lg overflow-hidden">
+                    <img src={qrCode} alt="QR Code" className="w-64 h-64 object-contain" />
+                  </div>
+                </div>
               )}
             </>
           ) : isConnecting && qrCode ? (
@@ -298,6 +330,12 @@ export function WhatsAppPage() {
                 <Wifi size={12} className="text-kap-whatsapp" />
                 <span className="text-[10px] text-kap-whatsapp font-medium">Conectado</span>
               </div>
+              {!isElectron && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20" title="Usando Servidor Dedicado">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  <span className="text-[10px] text-blue-300 font-medium">Web Mode</span>
+                </div>
+              )}
             </div>
             <Button
               size="sm"
@@ -306,7 +344,7 @@ export function WhatsAppPage() {
               icon={<RefreshCw size={14} />}
             />
           </div>
-          
+
           <div className="relative mb-3">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
@@ -350,8 +388,8 @@ export function WhatsAppPage() {
                   : 'hover:bg-white/5'}
               `}
               style={{
-                borderLeft: conversation.department?.color 
-                  ? `4px solid ${conversation.department.color}` 
+                borderLeft: conversation.department?.color
+                  ? `4px solid ${conversation.department.color}`
                   : undefined
               }}
             >
@@ -363,7 +401,7 @@ export function WhatsAppPage() {
                       {conversation.name}
                     </span>
                     {conversation.department && (
-                      <span 
+                      <span
                         className="px-2 py-0.5 rounded-full text-[10px] font-medium text-white flex-shrink-0"
                         style={{ backgroundColor: conversation.department.color }}
                       >
@@ -416,7 +454,7 @@ export function WhatsAppPage() {
                   value={currentConversation.department_id || ''}
                   onChange={(e) => handleDepartmentChange(e.target.value || null)}
                   className="px-3 py-1.5 rounded-lg bg-kap-surface-light border text-sm text-zinc-300 focus:outline-none focus:border-kap-accent"
-                  style={{ 
+                  style={{
                     borderColor: currentConversation.department?.color || 'var(--kap-border)',
                   }}
                 >
@@ -459,9 +497,9 @@ export function WhatsAppPage() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-3 min-h-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyYTJhMzUiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZ2LTJoLTJ2Mmgyem0tNCA2aC0ydi00aDJ2NHptMC02di0yaC0ydjJoMnoiLz48L2c+PC9nPjwvc3ZnPg==')] bg-kap-dark">
               {messages.map((message, index) => {
-                const showAgentName = message.is_from_me && message.sent_by_user && 
+                const showAgentName = message.is_from_me && message.sent_by_user &&
                   (index === 0 || messages[index - 1].sent_by_user_id !== message.sent_by_user_id || !messages[index - 1].is_from_me);
-                
+
                 return (
                   <div
                     key={message.id}
@@ -470,8 +508,8 @@ export function WhatsAppPage() {
                     {showAgentName && (
                       <div className="mb-1.5 px-2 flex items-center gap-2">
                         {message.sent_by_user?.avatar ? (
-                          <img 
-                            src={message.sent_by_user.avatar} 
+                          <img
+                            src={message.sent_by_user.avatar}
                             alt={message.sent_by_user.name}
                             className="w-4 h-4 rounded-full"
                           />
@@ -506,7 +544,7 @@ export function WhatsAppPage() {
                           />
                         </div>
                       )}
-                      
+
                       {message.type === 'video' && message.media_url && (
                         <div className="mb-2 rounded-lg overflow-hidden">
                           <video
@@ -516,7 +554,7 @@ export function WhatsAppPage() {
                           />
                         </div>
                       )}
-                      
+
                       {message.type === 'audio' && message.media_url && (
                         <div className="mb-2 flex items-center gap-2">
                           <Music size={20} className={message.is_from_me ? 'text-white/70' : 'text-zinc-400'} />
@@ -527,7 +565,7 @@ export function WhatsAppPage() {
                           />
                         </div>
                       )}
-                      
+
                       {message.type === 'document' && message.media_url && (
                         <div className="mb-2 flex items-center gap-2 p-2 rounded-lg bg-black/20">
                           <File size={20} className={message.is_from_me ? 'text-white/70' : 'text-zinc-400'} />
@@ -551,7 +589,7 @@ export function WhatsAppPage() {
                           </a>
                         </div>
                       )}
-                      
+
                       {message.type === 'sticker' && message.media_url && (
                         <div className="mb-2">
                           <img
@@ -561,20 +599,20 @@ export function WhatsAppPage() {
                           />
                         </div>
                       )}
-                      
+
                       {/* Show caption or content */}
                       {(message.caption || (message.type === 'text' && message.content)) && (
                         <p className={`text-sm whitespace-pre-wrap ${message.type !== 'text' ? 'mt-2' : ''}`}>
                           {message.caption || message.content}
                         </p>
                       )}
-                      
+
                       <div className={`flex items-center gap-1 mt-1 ${message.is_from_me ? 'justify-end' : ''}`}>
                         <span className={`text-[10px] ${message.is_from_me ? 'text-white/70' : 'text-zinc-500'}`}>
                           {format(new Date(message.timestamp), 'HH:mm')}
                         </span>
                         {message.is_from_me && (
-                          message.status === 'read' 
+                          message.status === 'read'
                             ? <CheckCheck size={14} className="text-blue-300" />
                             : <Check size={14} className="text-white/70" />
                         )}

@@ -147,11 +147,17 @@ export async function POST(request: NextRequest) {
       fs.mkdirSync(sessionPath, { recursive: true });
     }
 
+    // Crear un userDataDir único para evitar conflictos con navegadores en ejecución
+    const userDataDir = path.join(sessionPath, `browser-data-${sessionId}-${Date.now()}`);
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir, { recursive: true });
+    }
+
     // Intentar cargar sesión desde Supabase
     const hasSession = await loadSessionFromSupabase(sessionPath);
 
     // Crear nuevo cliente
-    console.log(`[WhatsApp API] Creating client for session: ${sessionId}`);
+    console.log(`[WhatsApp API] Creating client for session: ${sessionId} with userDataDir: ${userDataDir}`);
 
     const client = await create({
       session: 'kapchat-session',
@@ -162,6 +168,9 @@ export async function POST(request: NextRequest) {
       debug: false,
       logQR: true,
       autoClose: 0, // Deshabilitar autoClose para mantener la conexión activa
+      puppeteerOptions: {
+        userDataDir: userDataDir,
+      },
       browserArgs: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -184,13 +193,25 @@ export async function POST(request: NextRequest) {
 
     // Escuchar QR y guardar en Supabase
     client.onQRCode(async (qr) => {
-      qrCode = qr;
-      console.log('[WhatsApp API] QR Code generated:', qr.substring(0, 50) + '...');
-      // Guardar QR en Supabase
-      await saveSessionToSupabase(sessionPath, 'connecting', qr, userId);
+      // Asegurar que el QR esté en formato data URL
+      let qrDataUrl: string;
+      if (qr.startsWith('data:')) {
+        qrDataUrl = qr;
+      } else if (qr.startsWith('http')) {
+        // Si es una URL, convertirla a data URL (aunque normalmente no debería ser así)
+        qrDataUrl = qr;
+      } else {
+        // Si es base64 sin prefijo, agregarlo
+        qrDataUrl = `data:image/png;base64,${qr}`;
+      }
+      
+      qrCode = qrDataUrl;
+      console.log('[WhatsApp API] QR Code generated, length:', qrDataUrl.length);
+      // Guardar QR en Supabase (guardar el formato completo)
+      await saveSessionToSupabase(sessionPath, 'connecting', qrDataUrl, userId);
       // Resolver la promesa cuando el QR esté disponible
       if (qrResolve) {
-        qrResolve(qr);
+        qrResolve(qrDataUrl);
       }
     });
 
@@ -213,22 +234,34 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Esperar el QR con timeout
+    // Esperar el QR con timeout más corto para que el frontend pueda hacer polling
     try {
       const qr = await Promise.race([
         qrPromise,
         new Promise<string>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout waiting for QR')), 30000)
+          setTimeout(() => reject(new Error('Timeout waiting for QR')), 10000) // Reducido a 10 segundos
         )
       ]);
 
+      // Asegurar que el QR esté en formato data URL
+      let qrDataUrl: string;
+      if (qr.startsWith('data:')) {
+        qrDataUrl = qr;
+      } else {
+        qrDataUrl = `data:image/png;base64,${qr}`;
+      }
+      
+      console.log('[WhatsApp API] Returning QR, format:', qrDataUrl.substring(0, 30));
+      
       return NextResponse.json({ 
-        qrCode: qr,
+        qrCode: qrDataUrl,
         state: 'connecting',
         message: 'QR code generado, escanea con tu teléfono'
       });
     } catch (error: any) {
-      // Si no se generó QR en 30 segundos, verificar estado
+      console.log('[WhatsApp API] QR not ready yet, will be available via polling');
+      
+      // Si no se generó QR en 10 segundos, verificar estado
       const status = await client.getConnectionState();
       if (status === 'CONNECTED') {
         return NextResponse.json({ 
@@ -239,15 +272,34 @@ export async function POST(request: NextRequest) {
       }
       
       // Retornar que está esperando, el frontend puede hacer polling
+      // El QR se guardará en Supabase cuando esté disponible
       return NextResponse.json({ 
         state: 'waiting',
-        message: 'Generando código QR...',
+        message: 'Generando código QR... El código aparecerá en unos segundos.',
         // Retornar null para que el frontend sepa que debe hacer polling
         qrCode: null
       });
     }
   } catch (error: any) {
     console.error('[WhatsApp API] Error:', error);
+    
+    // Manejar error específico de navegador ya en ejecución
+    if (error.message && error.message.includes('already running')) {
+      // Limpiar cliente activo si existe
+      if (activeClients.has(sessionId)) {
+        activeClients.delete(sessionId);
+      }
+      
+      return NextResponse.json(
+        { 
+          error: 'Navegador ya en ejecución',
+          message: 'Hay una instancia del navegador corriendo. Intenta nuevamente en unos segundos.',
+          retry: true
+        },
+        { status: 409 }
+      );
+    }
+    
     return NextResponse.json(
       { 
         error: 'Error al conectar WhatsApp',

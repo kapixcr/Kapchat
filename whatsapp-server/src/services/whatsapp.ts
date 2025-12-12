@@ -64,6 +64,14 @@ export class WhatsAppService extends EventEmitter {
       // Intentar cargar sesión desde Supabase
       const hasSession = await this.loadSessionFromSupabase();
 
+      // Crear un userDataDir único para evitar conflictos con navegadores en ejecución
+      const userDataDir = path.join(this.sessionPath, `browser-data-${Date.now()}`);
+      if (!fs.existsSync(userDataDir)) {
+        fs.mkdirSync(userDataDir, { recursive: true });
+      }
+
+      console.log(`[WhatsApp Service] Using userDataDir: ${userDataDir}`);
+
       this.client = await create({
         session: 'kapchat-session',
         folderNameToken: this.sessionPath,
@@ -73,6 +81,9 @@ export class WhatsAppService extends EventEmitter {
         headless: true,
         devtools: false,
         useChrome: false,
+        puppeteerOptions: {
+          userDataDir: userDataDir,
+        },
         browserArgs: [
           '--no-sandbox',
           '--disable-setuid-sandbox',

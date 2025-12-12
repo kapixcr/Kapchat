@@ -17,24 +17,41 @@ interface WhatsAppStatusResponse {
 class WhatsAppApiService {
   // Usar servidor dedicado si está disponible, sino usar API routes de Next.js
   private getBaseUrl(): string {
-    // Verificar si hay un servidor dedicado configurado
-    const dedicatedServer = 
+    // Verificar si hay un servidor dedicado configurado en variables de entorno
+    let dedicatedServer =
       (typeof window !== 'undefined' && (window as any).NEXT_PUBLIC_WHATSAPP_SERVER_URL) ||
       (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_WHATSAPP_SERVER_URL);
-    
-    if (dedicatedServer) {
-      return dedicatedServer;
+
+    // Si no hay variable definida pero estamos en desarrollo web (no electron),
+    // intentar usar el puerto por defecto del servidor (3001)
+    if (!dedicatedServer &&
+      typeof window !== 'undefined' &&
+      window.location.hostname === 'localhost' &&
+      !this.isElectron()) {
+      dedicatedServer = 'http://localhost:3001';
     }
-    
+
+    if (dedicatedServer) {
+      // Remover slash final si existe
+      return dedicatedServer.endsWith('/') ? dedicatedServer.slice(0, -1) : dedicatedServer;
+    }
+
     // Fallback a API routes de Next.js
     return '/api/whatsapp';
+  }
+
+  private isElectron(): boolean {
+    return (
+      (typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron')) ||
+      (typeof window !== 'undefined' && !!(window as any).api)
+    );
   }
 
   async connect(userId?: string): Promise<WhatsAppConnectResponse> {
     const baseUrl = this.getBaseUrl();
     // Si baseUrl es el servidor dedicado, ya incluye el dominio completo
     // Si es '/api/whatsapp', es una ruta relativa de Next.js
-    const url = baseUrl.startsWith('http') 
+    const url = baseUrl.startsWith('http')
       ? `${baseUrl}/api/whatsapp/connect`
       : `${baseUrl}/connect`;
     const response = await fetch(url, {

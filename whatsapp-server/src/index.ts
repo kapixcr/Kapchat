@@ -9,14 +9,14 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://127.0.0.1:3000', '*'],
     methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://127.0.0.1:3000', '*'],
   credentials: true,
 }));
 app.use(express.json());
@@ -56,7 +56,7 @@ app.post('/api/whatsapp/connect', async (req, res) => {
     // Crear nuevo servicio
     console.log(`[WhatsApp Server] Creating service for session: ${sessionId}`);
     const service = new WhatsAppService(sessionId, supabase);
-    
+
     // Escuchar eventos y emitir a través de WebSocket
     service.on('qr', (qr) => {
       io.emit(`whatsapp:qr:${sessionId}`, qr);
@@ -103,7 +103,7 @@ app.get('/api/whatsapp/status/:userId?', async (req, res) => {
   try {
     const userId = req.params.userId || 'default';
     const service = whatsappServices.get(userId);
-    
+
     if (!service) {
       return res.json({
         hasSession: false,
@@ -160,7 +160,7 @@ io.on('connection', (socket) => {
   socket.on('whatsapp:subscribe', (userId: string) => {
     const sessionId = userId || 'default';
     console.log(`[WhatsApp Server] Client ${socket.id} subscribed to ${sessionId}`);
-    
+
     // Unirse a la sala del usuario
     socket.join(`whatsapp:${sessionId}`);
   });
@@ -169,7 +169,7 @@ io.on('connection', (socket) => {
     try {
       const sessionId = data.userId || 'default';
       const service = whatsappServices.get(sessionId);
-      
+
       if (!service) {
         socket.emit('error', { message: 'WhatsApp no conectado' });
         return;

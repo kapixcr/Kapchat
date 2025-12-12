@@ -30,8 +30,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Asegurar que el QR esté en formato data URL si existe
+    let qrCode: string | null = data.qr_code;
+    if (qrCode && !qrCode.startsWith('data:')) {
+      // Si no tiene el prefijo data:, agregarlo
+      qrCode = `data:image/png;base64,${qrCode}`;
+    }
+
+    console.log('[WhatsApp API] Returning QR from Supabase, hasQR:', !!qrCode, 'format:', qrCode?.substring(0, 30));
+
     return NextResponse.json({ 
-      qrCode: data.qr_code,
+      qrCode: qrCode,
       status: data.status || 'disconnected'
     });
   } catch (error: any) {
